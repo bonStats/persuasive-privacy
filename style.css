@@ -1,0 +1,209 @@
+/* ===== from slides' original style.css ===== */
+.center h2 {
+  text-align: center;
+}
+
+#vcenter {
+  vertical-align: middle;
+}
+
+.v-center-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 90%;
+}
+
+.graytext {
+  color: grey;
+}
+
+.center {
+  text-align: center;
+}
+
+.cell-output-display > div:not(.quarto-figure) figure svg {
+  max-width: 100% !important;
+}
+
+.redacted {
+  background-color: black;
+  color: black;
+  border-radius: 4px;
+}
+
+.redacted::selection {
+  background-color: black;
+}
+
+.hidden-title h2 {
+  display: none !important;
+}
+
+/* ===== page-level styling for the webpage build ===== */
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden; /* only .content-pane scrolls - see below */
+}
+body {
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+/* Quarto's page-layout:custom wraps everything in a single div.page-layout-
+   custom (confirmed from the actual rendered output) containing, as
+   siblings: its own auto-rendered #title-block-header, then our
+   .split-layout. Making this wrapper a flex column (rather than relying on
+   a fixed 100vh on .split-layout) means the title header gets its natural
+   content-sized share first, and .split-layout fills exactly what's left -
+   so nothing is clipped by body's overflow:hidden regardless of the title
+   header's actual height. #quarto-content/#quarto-document-content are kept
+   as a harmless fallback in case a different Quarto version nests things
+   differently. */
+.page-layout-custom,
+#quarto-content, #quarto-document-content, main.content {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  position: relative; /* anchors .top-links (position:absolute) below */
+}
+/* Quarto still renders its own title block above our content even with
+   page-layout: custom - it isn't suppressed automatically. Rather than fight
+   that, we give it a fixed (content-sized) share of the flex column via
+   flex:0 0 auto, and nudge it off the literal page corner with padding.
+   padding-right leaves room so .top-links (docked top-right) never
+   overlaps a long title/subtitle line. */
+#title-block-header.quarto-title-block {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 1.25rem 12rem .75rem 1.75rem;
+}
+
+/* Links (ICML poster / arXiv / project site) stacked in the top-right
+   corner, directly across from "Persuasive Privacy". Positioned absolutely
+   within .page-layout-custom so it sits over the frozen header area without
+   needing to be a literal child of Quarto's auto-generated header. */
+.top-links {
+  position: absolute;
+  top: 1.35rem;
+  right: 1.75rem;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .3rem;
+  font-size: .85rem;
+}
+.top-links a {
+  color: #1d4ed8;
+  text-decoration: none;
+}
+.top-links a:hover { text-decoration: underline; }
+@media (max-width: 700px) {
+  .top-links { position: static; align-items: flex-start; padding: 0 0 .5rem 1.75rem; }
+  #title-block-header.quarto-title-block { padding-right: 1.75rem; }
+}
+
+/* Two-pane layout: left = static diagram + pop-up (does not scroll itself
+   unless its own content overflows), right = all article prose, and the
+   ONLY part of the page that scrolls. Height comes from flex:1 1 auto
+   filling whatever room is left under the title header above (NOT a fixed
+   100vh - that was clipping the bottom of both panes by the title header's
+   height, since body has overflow:hidden). */
+.split-layout {
+  display: flex;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+.diagram-pane {
+  flex: 0 0 44%;
+  max-width: 44%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 1.25rem;
+  border-right: 1px solid #e4e4e7;
+  background: #fbfbfb;
+  overflow-y: auto; /* fallback only, in case a long pinned description needs it */
+}
+.content-pane {
+  flex: 1 1 56%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 1.5rem 2.5rem;
+  overflow-y: auto;
+}
+@media (max-width: 900px) {
+  html, body { overflow: auto; }
+  .page-layout-custom, #quarto-content, #quarto-document-content, main.content { display: block; height: auto; }
+  .split-layout { flex-direction: column; height: auto; display: block; }
+  .diagram-pane, .content-pane { max-width: 100%; height: auto; flex: none; }
+  .diagram-pane { height: 60vh; border-right: none; border-bottom: 1px solid #e4e4e7; }
+}
+
+/* .title-block (author names + venue, at the end of the document) and the
+   footnote list that immediately follows it (Quarto always renders
+   footnotes at the very end, regardless of source position) are meant to
+   read as ONE continuous footer band - not title-block as its own section
+   followed separately by a "Footnotes" block. So: only ONE top border (on
+   title-block) marks the transition out of the article body; the
+   footnotes' own <hr> is suppressed so there's no second seam, and spacing
+   is tightened so the affiliation list sits directly under the author line. */
+.title-block {
+  text-align: center;
+  padding: 1.5rem 0 .25rem 0;
+  margin-top: 2.5rem;
+  border-top: 1px solid #e4e4e7;
+}
+.footnotes {
+  padding-bottom: 1.5rem;
+}
+.footnotes hr { display: none; }
+
+.callout-note, .callout-tip, .callout-warning, .callout-important {
+  margin: 1.25rem 0;
+}
+
+.players-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+@media (max-width: 700px) {
+  .players-grid { grid-template-columns: 1fr; }
+}
+
+/* Footnotes (author affiliations, venue/links) laid out horizontally rather
+   than one per line, to save vertical space. List markers (numbers) still
+   render normally since each <li>'s own display stays list-item - only the
+   <ol> itself becomes a flex row. */
+.footnotes ol {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 1.75rem;
+  row-gap: .35rem;
+  padding-left: 1.4rem;
+  margin: .5rem 0 0 0;
+  justify-content: center;
+}
+.footnotes li { margin: 0; }
+.footnotes li > p { margin: 0; }
+#quarto-appendix { margin: 0; padding: 0; border: none; }
+/* Quarto auto-inserts a "Footnotes" heading above the footnote list (pandoc
+   alone does not - this is Quarto's own HTML post-processing), which reads
+   oddly directly under the title-block/venue line acting as a footer.
+   `.quarto-appendix-heading` is the actual class confirmed from real
+   rendered output; the rest are defensive fallbacks. */
+.quarto-appendix-heading,
+.footnotes-title,
+.footnotes > h2, .footnotes > h3,
+section.footnotes > h2, section.footnotes > h3,
+aside.footnotes > h2, aside.footnotes > h3 {
+  display: none !important;
+}

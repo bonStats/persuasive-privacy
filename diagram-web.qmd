@@ -1,0 +1,207 @@
+```{r tikz-svg, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+# Find the TikZ source (kept next to this .qmd)
+src <- "diagram.tex"
+if (!file.exists(src)) {
+  inp <- tryCatch(knitr::current_input(dir = TRUE), error = function(e) NA_character_)
+  if (!is.na(inp)) src <- file.path(dirname(inp), "diagram.tex")
+}
+if (!file.exists(src))
+  stop("Cannot find 'diagram.tex'. Keep it in the same folder as this .qmd.")
+
+tools <- Sys.which(c("latex", "dvisvgm"))
+if (any(tools == ""))
+  stop("Not on PATH (as Quarto sees it): ",
+       paste(names(tools)[tools == ""], collapse = ", "),
+       ". Install TeX Live / TinyTeX + dvisvgm, then restart.")
+
+build <- tempfile("tikz"); dir.create(build)
+fig <- file.path(build, "fig.tex")
+ok <- file.copy(normalizePath(src), fig, overwrite = TRUE)
+if (!isTRUE(ok)) stop("Could not copy diagram.tex into the build directory.")
+
+dvi_log <- system2("latex",
+  c("-interaction=nonstopmode", "-halt-on-error",
+    paste0("-output-directory=", build), fig),
+  stdout = TRUE, stderr = TRUE)
+if (!file.exists(file.path(build, "fig.dvi")))
+  stop("latex could not build diagram.tex (often a missing package). Try:\n",
+       "  tinytex::tlmgr_install(c('standalone','pgf','xcolor','amsmath','amsfonts'))\n",
+       "Last lines of the log:\n", paste(utils::tail(dvi_log, 15), collapse = "\n"))
+
+svg_log <- system2("dvisvgm",
+  c("--no-fonts", paste0("--output=", file.path(build, "fig.svg")),
+    file.path(build, "fig.dvi")),
+  stdout = TRUE, stderr = TRUE)
+if (!file.exists(file.path(build, "fig.svg")))
+  stop("dvisvgm could not convert the DVI. Last lines:\n",
+       paste(utils::tail(svg_log, 15), collapse = "\n"))
+
+svg <- paste(readLines(file.path(build, "fig.svg"), warn = FALSE), collapse = "\n")
+
+# Safari (unlike Chrome) can fail to infer an SVG's intrinsic aspect ratio from
+# its viewBox alone when the element has no width/height attributes and is
+# being auto-sized (height:100%; width:auto) inside a flex container - it can
+# collapse to zero size. Computing the ratio here and setting it explicitly
+# via the CSS `aspect-ratio` property removes that ambiguity for every browser.
+vb <- regmatches(svg, regexpr("viewbox='[^']*'", svg, ignore.case = TRUE))
+vb_nums <- as.numeric(strsplit(gsub("[^0-9.eE+-]+", " ", vb), "\\s+")[[1]])
+vb_nums <- vb_nums[!is.na(vb_nums)]
+aspect_style <- ""
+if (length(vb_nums) == 4 && vb_nums[4] > 0) {
+  ar <- vb_nums[3] / vb_nums[4]
+  aspect_style <- sprintf(" style='aspect-ratio:%s;'", format(ar, digits = 6))
+}
+
+svg <- sub("<svg ", paste0("<svg class='tikz-diagram'", aspect_style, " "), svg, fixed = TRUE)
+svg <- sub(" width='[^']*'", "", svg)
+svg <- sub(" height='[^']*'", "", svg)
+
+# Emit as a Pandoc raw-HTML block so the <div>/<svg> are passed through verbatim.
+# Plain, static, in-flow markup: no position:fixed/sticky, no collapse toggle.
+fence <- strrep("`", 3)
+cat(paste0(fence, "{=html}"),
+    '<div id="tikz-panel" class="tikz-panel">',
+    '  <div class="tikz-panel-title">The Sender&ndash;Receiver privacy game</div>',
+    '  <div class="tikz-wrap">', svg, '</div>',
+    '  <div id="tikz-info" class="tikz-info"></div>',
+    '</div>',
+    fence, sep = "\n")
+```
+
+{{< include diagram-descriptions.qmd >}}
+
+```{=html}
+<style>
+/* Diagram lives in a plain, static column (see .diagram-pane in style.css) -
+   no fixed/sticky positioning, no collapse toggle, no TOC-hiding hacks.
+   It's simply laid out top-to-bottom: title, diagram (grows to fill
+   available space), info pop-up underneath (fixed share of the column,
+   scrolls internally if a description is long). */
+.tikz-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.tikz-panel-title {
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-size: .95rem;
+  color: #3f3f46;
+  padding-bottom: .5rem;
+}
+.tikz-wrap {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+svg.tikz-diagram { width: auto; height: 100%; max-width: 100%; display: block; margin: 0 auto; }
+.tikz-desc { position: absolute; left: -10000px; top: 0; width: 920px; }
+.tikz-info .tikz-desc { position: static; left: auto; top: auto; width: auto; }
+.hotspot.active { cursor: pointer; }
+.hotspot.active path { transition: fill-opacity .12s ease, fill .12s ease; }
+.hotspot.active:hover path { fill: #f59e0b; fill-opacity: .28; }
+.hotspot.active.selected path { fill: #2563eb; fill-opacity: .30; }
+.hotspot.active.container:hover path { fill: #f59e0b; fill-opacity: .06; stroke: #f59e0b; stroke-width: 2; }
+.hotspot.active.container.selected path { fill: #2563eb; fill-opacity: .07; stroke: #2563eb; stroke-width: 2; }
+.tikz-info {
+  flex: 0 0 32%;
+  min-height: 0;
+  margin-top: .75rem;
+  padding: .6rem .8rem;
+  border: 1px solid #d4d4d8; border-left: 4px solid #2563eb; border-radius: 6px;
+  background: #fafafa; color: #18181b; font-size: .92em; line-height: 1.35;
+  text-align: left; overflow-y: auto;
+}
+.tikz-info p { margin: 0; }
+.tikz-info .ti-hint { color: #71717a; font-style: italic; }
+
+/* Inline "node-link" chips used throughout the prose (right-hand column) to
+   jump to a diagram node in the left-hand panel */
+.node-link {
+  cursor: pointer; border-bottom: 1px dotted #2563eb; color: #1d4ed8;
+  padding: 0 1px; transition: background-color .15s ease;
+}
+.node-link:hover { background-color: #dbeafe; }
+.node-link.node-link-flash { background-color: #fde68a; }
+</style>
+<script>
+(function () {
+  function init() {
+    const info = document.getElementById('tikz-info');
+    const spots = document.querySelectorAll('.hotspot');
+    if (!info) return;
+
+    const blocks = {};
+    document.querySelectorAll('.tikz-desc[data-node]').forEach(function (b) {
+      blocks['node-' + b.getAttribute('data-node')] = b;
+    });
+
+    const hint = document.createElement('span');
+    hint.className = 'ti-hint';
+    hint.textContent = 'Hover or click a node - or an underlined term in the text - to inspect it.';
+
+    let pinned = null;
+    function typeset() {
+      if (window.MathJax && MathJax.typesetPromise) { MathJax.typesetPromise([info]).catch(function(){}); }
+      else if (window.renderMathInElement) { try { renderMathInElement(info); } catch (e) {} }
+    }
+    function show(id) {
+      const b = blocks[id];
+      if (!b) { info.replaceChildren(hint); return; }
+      info.replaceChildren(b);
+      typeset();
+    }
+    function showHint() { info.replaceChildren(hint); }
+    showHint();
+
+    function selectNode(id) {
+      const g = document.getElementById(id);
+      if (!blocks[id]) return;
+      if (pinned === id) {
+        if (g) g.classList.remove('selected');
+        pinned = null; showHint();
+      } else {
+        spots.forEach(function (s) { s.classList.remove('selected'); });
+        if (g) g.classList.add('selected');
+        pinned = id; show(id);
+      }
+      document.dispatchEvent(new CustomEvent('tikznode', { detail: { id: id, selected: pinned === id } }));
+    }
+    // Exposed so inline "node-link" text elsewhere on the page can drive the diagram.
+    window.tikzSelectNode = selectNode;
+
+    spots.forEach(function (g) {
+      if (!blocks[g.id]) return;
+      g.classList.add('active');
+      g.addEventListener('mouseenter', function () { show(g.id); });
+      g.addEventListener('mouseleave', function () { if (pinned) show(pinned); else showHint(); });
+      g.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        selectNode(g.id);
+      });
+    });
+
+    // Wire up any inline `.node-link` chips anywhere in the (scrollable) prose
+    // column to the diagram in the (static) left panel.
+    document.querySelectorAll('.node-link[data-node]').forEach(function (el) {
+      el.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        const id = 'node-' + el.getAttribute('data-node');
+        window.tikzSelectNode(id);
+        el.classList.add('node-link-flash');
+        setTimeout(function () { el.classList.remove('node-link-flash'); }, 600);
+      });
+    });
+  }
+  function start() {
+    if (window.MathJax && MathJax.startup && MathJax.startup.promise) MathJax.startup.promise.then(init);
+    else init();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
+</script>
+```

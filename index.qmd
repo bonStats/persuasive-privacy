@@ -1,0 +1,301 @@
+---
+title: "Persuasive Privacy"
+subtitle: "A game-theoretic framework for data privacy"
+bibliography: refs.bib
+csl: begel.csl
+format:
+  html:
+    css: style.css
+    html-math-method: katex
+    page-layout: custom
+    df-print: paged
+    self-contained-math: true
+editor: source
+---
+
+```{=html}
+<div class="top-links">
+  <a href="https://icml.cc/virtual/2026/poster/64335">ICML Page</a>
+  <a href="https://doi.org/10.48550/arXiv.2601.22945">arXiv:2601.22945</a>
+  <a href="https://bonstats.github.io">bonstats.github.io</a>
+</div>
+```
+
+```{=html}
+<div class="split-layout">
+<div class="diagram-pane">
+```
+
+{{< include diagram-web.qmd >}}
+
+```{=html}
+</div>
+<div class="content-pane">
+```
+
+::: {.title-block}
+**Joshua J. Bon**[^bon], **James Bailie**[^bailie], **Judith Rousseau**[^paris], **Christian P. Robert**[^paris] [^warwick]
+
+Forty-Third International Conference on Machine Learning (ICML 2026)
+:::
+
+## Privacy as persuasion
+
+
+We propose a two-player Stackelberg game between a [**Sender**]{.node-link data-node="statbox"} (custodian of the sensitive data) and a [**Receiver**]{.node-link data-node="advbox"} (adversary) to construct a new class of privacy definitions. The construction is closely related to **Bayesian persuasion** [@kamenica2011bayesian], but differs in three key ways: *information asymmetry*, *related* utility functions, and *semi-robustness*.
+
+We assess the privacy of a mechanism [$M$]{.node-link data-node="mech"}, a Markov kernel with output [$T \sim M(x,\cdot)$]{.node-link data-node="sstat"}, where $M(x,\cdot)$ is a distribution on $(\mathsf{T},\mathcal{T})$ for the Sender's private data $x \in \mathsf{X}$.
+
+
+:::{.callout-note}
+## Why persuasive?
+Sender chooses $M$ to persuade Receiver to make decisions with limited privacy impact.
+:::
+
+**Example players**
+
+::: {.players-grid}
+::: {.callout-tip}
+## [Sender]{.node-link data-node="statbox"}
+
+A government agency releases **small area statistics** on a disease.
+:::
+
+::: {.callout-warning}
+## [Receiver]{.node-link data-node="advbox"}
+
+An insurance company **raises premiums** using inferred disease prevalence in a small town.
+:::
+:::
+
+## Why a new privacy framework?
+
+Differential privacy [DP; @dwork2006approxdp] and its variants [@desfontaines2020sok] are the de facto standard, but face persistent challenges — hard-to-interpret parameters [@cummingsCenteringPolicyPractice2023] and large, potentially vacuous, privacy budgets in practice. We develop a framework to:
+
+1. Generate privacy definitions that are **fit for purpose** *and* rigorously justified;
+2. Assess existing privacy guarantees and their properties with a **game-theoretic** approach;
+3. Evaluate the privacy of **deterministic algorithms**.
+
+Unlike DP, whose semantic interpretations are constructed *post-hoc*, our agent-based game is a **semantics-first** approach where each assumption can be tested against real-world considerations. Moreover, deterministic algorithms are incompatible with DP, yet central to releasing invariant statistics (e.g. the US Decennial Census) [@abowd2020CensusDisclosure2022].
+
+## Privacy functions
+
+Sender measures privacy with a *privacy function* [$\rho$]{.node-link data-node="spriv"}, depending on Receiver's decision $d \in \mathcal{D}$ and the data value $x \in \mathsf{X}$,
+
+$$\rho: (\mathcal{D},\mathsf{X}) \rightarrow \mathbb{R}.$$
+
+The privacy function orders Sender's preferences over Receiver's decisions: if Sender prefers $d_1$ to $d_2$ given $x$, then $\rho(d_1,x) > \rho(d_2,x)$. That is, $\rho$ is *positively oriented*.
+
+::: {.callout-tip}
+## Example 1: interval privacy function
+
+Let $\mathcal{D} = \{[a,b]: a,b \in \mathbb{R}, a \leq b\}$ and $\mathsf{X}=\mathbb{R}$. Given $s > 0$,
+
+$$\rho(d,x) = \begin{cases} 0 & \text{if } x\in d \text{ and } \vert d \vert \leq s,\\ 1 & \text{otherwise}. \end{cases}$$
+:::
+
+::: {.callout-tip}
+## Example 2: negative log-probability privacy function
+
+Let $\mathcal{D}$ be the set of probability density functions on $\mathsf{X}=\mathbb{R}$ with respect to some measure $\mu$. For $d \in \mathcal{D}$ and $x \in \mathsf{X}$, the negative log-probability privacy function is $\rho(d,x)  = -\log d(x)$.
+:::
+
+## Transparency
+
+Transparency is typically required so that the privacy status of $M$ can be externally verified. Sharing some (yet to be specified) privacy definition $\mathrm{D}$ is equivalent to sharing $$\mathfrak{C} = \{\text{Markov kernels}~M~\text{satisfying}~\mathrm{D}\}.$$
+
+::: {.callout-note #assumption-1}
+## Assumption 1: Transparency
+
+[Sender]{.node-link data-node="statbox"} shares the mechanism [$M$]{.node-link data-node="mech"} and privacy class [$\mathfrak{C}$]{.node-link data-node="strans"}, for which $M \in \mathfrak{C}$, with [Receiver]{.node-link data-node="advbox"}. Further, the definitions of $M$ and $\mathfrak{C}$ do not depend on the data.
+:::
+
+## Receiver model
+
+::: {.callout-note #assumption-2}
+## Assumption 2: Bayesian adversary
+
+[Receiver]{.node-link data-node="advbox"} is Bayes rational.
+:::
+
+Under Assumption 2, Receiver will hold a [data-prior]{.node-link data-node="adata"} $Q$ expressing their uncertainty about the true value of $x$. They will also make decisions with respect to some [loss function]{.node-link data-node="aloss"} $\ell$.
+
+### Receiver's best response
+
+Under the data-prior, Receiver's best response is
+
+$$d^{Q} \in \arg\inf_{d \in \mathcal{D}} \mathbb{E}_{z\sim Q}\left[ \ell(d,z) \right].$$
+
+After observing $T \sim M(x,\cdot)$, Receiver forms the [**data-posterior**]{.node-link data-node="apost"} $Q_T = Q(\,\cdot \mid T)$ and their best response is
+
+$$d^{Q_T} \in \arg\inf_{d \in \mathcal{D}} \mathbb{E}_{z\sim Q_T}\left[ \ell(d,z) \right].$$
+
+The following assumption, links Sender's privacy function and Receiver's loss.
+
+::: {.callout-note #assumption-3}
+## Assumption 3: Adversarial loss function
+
+Receiver's [loss function]{.node-link data-node="aloss"} satisfies $\ell(d,x) = \rho(d,x)$ for all $d \in \mathcal{D}$ and $x \in \mathsf{X}$.
+:::
+
+Setting Receiver's loss as $\ell = \rho$ can be interpreted as the data-averaged worst case privacy outcome for Sender (see Proposition 1 in [paper](https://doi.org/10.48550/arXiv.2601.22945)). 
+
+## Sender's attained privacy
+
+Sender's attained [privacy]{.node-link data-node="spriv"} is $\rho(d^{Q_T}, x)$, conditional on output [$T$]{.node-link data-node="sstat"}, data-prior $Q$, and the true value [$x$]{.node-link data-node="sdata"}. When $\ell = \rho$ (from [Assumption 3](#assumption-3)), the attained privacy is a (negatively-oriented) **proper scoring rule** [@gneiting2007strictly; @grunwald2004game],
+
+$$S(P,x) = \rho(d^{P}, x),$$
+
+measuring how well Receiver's belief $P$ predicts $x$. We use *privacy scores* due to this equivalence. Privacy attained under the data-prior and data-posterior are $S(Q,x)$ and $S(Q_T,x)$ respectively.
+
+:::{.callout-warning}
+## Privacy score equivalence
+
+In our framework privacy functions naturally lead to privacy scores (proper scoring rules). Further, a proper scoring rule will always have a dual privacy function. Therefore, **designing a privacy score or a privacy function are both appropriate strategies**.
+
+:::
+
+We continue with privacy score perspective for simplicity.
+
+## Sender's privacy assessment
+
+Sender must assess privacy with respect to (possible) stochasticity in [$T$]{.node-link data-node="sstat"}, potential data-priors $Q \in \mathcal{Q}_x$ held by Receiver, and all potential datasets $x \in \mathsf{X}$ (due to [Assumption 1](#assumption-1)). We use two robust assessment assumptions for Sender, though others are possible.
+
+The relative privacy loss is defined as
+
+$$\Delta(Q,T,x) = S(Q,x) - S(Q_T,x),$$
+measuring the change in privacy score from the data-prior $Q$ to data-posterior $Q_T$.
+
+::: {.callout-note #assumption-4}
+## Assumption 4
+
+For a given data-prior $Q$ and dataset $x$, Sender considers a mechanism $M$ private only if
+
+$$\mathbb{P}_x\left[\Delta(Q,T,x) \leq \kappa \right] \geq 1 - \delta, \tag{1}$$
+
+with $\Delta(Q,T,x) = S(Q,x) - S(Q_T,x)$, for some maximum acceptable privacy loss $\kappa\geq0$ and probability of failure $0 \leq \delta \ll 1$. The probability $\mathbb{P}_x$ is with respect to $M(x,\cdot)$.
+:::
+
+::: {.callout-note #assumption-5}
+## Assumption 5
+
+Sender considers $M$ private if (1) holds uniformly for all data-priors $Q \in \mathcal{Q}_x$ and datasets $x \in \mathsf{X}$.
+:::
+
+## Persuasive Privacy (PP)
+
+Fix a non-empty set of privacy scores $\mathcal{S}$ on $\mathsf{X}$, a class of data-priors $\mathcal{Q}_x \subset \mathcal{P}(\mathsf{X})$, a maximum acceptable privacy loss $\kappa \geq 0$, and a small probability of failure $0\leq\delta \ll 1$.
+
+Assumptions [1](#assumption-1), [2](#assumption-2), [3](#assumption-3), [4](#assumption-4), [5](#assumption-5) define Persuasive Privacy as follows. 
+
+::: {.callout-note}
+## Persuasive Privacy
+
+A mechanism $M$ is $(\mathcal{S}, \mathcal{Q}_x, \kappa, \delta)\text{-PP}$ if
+
+$$\inf_{S\in\mathcal{S}}\;\inf_{x\in\mathsf{X}}\;\inf_{Q\in\mathcal{Q}_x} \mathbb{P}_x\!\left[\Delta_S(Q,T,x) \leq \kappa \right] \geq 1 - \delta,$$
+
+for $\Delta_S(Q,T,x) = S(Q,x) - S(Q_{T},x)$. 
+:::
+
+Multiple scoring rules (equivalent to multiple privacy functions) are allowed by considering all $S\in \mathcal{S}$.
+
+## Differential Privacy as a special case
+
+::: {.callout-tip}
+## Example 3: Probabilistic DP
+
+Probabilistic DP [PDP; @machanavajjhala2008privacy] is exactly recovered. Let $L$ be the (discrete) negative log-probability score and $\mathcal{H}$ the class of two-point *neighbouring alternative hypothesis* data-priors, $\mathcal{H} = \{Q : \exists\, (x,x^\prime)\in\mathfrak{N},\ Q(\{x,x^\prime\})=1\}$, for some neighbour relation $\mathfrak{N}$. Then
+
+$$M~\text{is}~(\varepsilon,\delta)\text{-PDP} \quad\Longleftrightarrow\quad M~\text{is}~(L,\mathcal{H},\varepsilon,\delta)\text{-PP}.$$
+
+Since *pure* $\varepsilon$-DP is a special case of PDP when $\delta=0$, we also recover $\varepsilon$-DP.
+:::
+
+::: {.callout-tip}
+## Example 4: Rényi DP
+
+Changing [Assumption 4](#assumption-4) from a tail-probability condition to an expected-value condition instead recovers **Rényi DP** [@mironov2017renyi] under otherwise identical settings. See Appendix C in the [paper](https://doi.org/10.48550/arXiv.2601.22945).
+:::
+
+## Post-processing: two notions
+
+Our framework enables separation of two properties conflated as "post-processing":
+
+- **Receiver post-processing** ($M \in \mathfrak{C} \Rightarrow M \otimes K \in \mathfrak{C}$): Receiver cannot extract more about $x$ by transforming the output. *All PP guarantees satisfy this.*
+- **Sender post-processing** ($M \in \mathfrak{C} \Rightarrow MK \in \mathfrak{C}$, "chaining"): *not* satisfied by PP in general. But Sender can trivially preserve the guarantee by releasing from $M \otimes K$ instead of $MK$.
+
+PDP does not satisfy (Sender) post-processing [@kifer2012axiomatic]. Distinguishing Receiver/Sender post-processing reveals this is not a drawback for the adversarial protections afforded by PDP, but rather a restriction of (Sender) post-processing as a mathematical tool for establishing a PDP guarantee.
+
+## Deterministic mechanism: No noise empirical average
+
+::: {.callout-tip}
+## Example 5
+
+Let $\mathsf{X} = \mathbb{R}^n$ where $x_i$ is a sensitive value for each individual in the dataset. Consider the marginal **Dawid–Sebastiani score** [@dawid1999coherent] for each $i\in [1:n]$,
+
+$$D_i(Q,x) = \log \sigma_i^2(Q) + \frac{[x_i - \mu_i(Q)]^2}{\sigma^{2}_i(Q)},$$
+
+where $\mu_i(Q) = \mathbb{E}_{X\sim Q}[X_i]$ and $\sigma_i^2(Q) = \mathrm{Var}_{X\sim Q}[X_i]$, the $i$th marginal mean and variance of $Q$. Define the data-prior class
+
+$$\mathcal{G}_x^r =\left\{ \mathcal{N}(\mu,\Sigma)\in \mathcal{P}(\mathbb{R}^n): \frac{(\bar{x}-\bar{\mu})^2}{\overline{\Sigma}} \leq r_1,\; c_\Phi \leq r_2 \left(1-\frac{\max_i\sigma_i^2}{\Vert\sigma\Vert_2^2}\right)\right\},$$
+
+bounding Receiver's strength via mean and correlation-variance constraints, where $c_\Phi$ is the condition number of the correlation matrix of $\Sigma$ and $\sigma^2 = \text{diag}(\Sigma)$. Denoting $\mathcal{I} = \{D_i\}_{i=1}^n$,
+
+$$M(x,\cdot) = \delta_{\bar{x}}~\text{is}~(\mathcal{I},\,\mathcal{G}_x^r,\,r_1 + \log r_2,\,0)\text{-PP}.$$
+
+**Interpretation**: releasing the average with **no noise** is private if Receiver's prior guess for $\bar{x}$ is not too poor, no single marginal prior variance dominates, and the data-prior is not too correlated.
+:::
+
+## Conclusion
+
+- Persuasive Privacy is a semantics-first **game-theoretic** framework for defining privacy.
+- Recovers **Pure & Probabilistic DP**; Rényi and $f$-divergence privacy with a small change.
+- Certifies **deterministic mechanisms**, enabling better privacy–utility trade-offs.
+- See the [paper](https://doi.org/10.48550/arXiv.2601.22945) for the composition property, a deterministic cell-suppression example, and the data-averaged worst-case justification of [Assumption 3](#assumption-3).
+- Ongoing work: utility-optimal mechanisms; investigating framework settings in applications.
+
+## References
+
+::: {#refs}
+:::
+
+[^bon]: Adelaide University
+[^bailie]: Chalmers University of Technology
+[^paris]: Université Paris–Dauphine PSL
+[^warwick]: University of Warwick
+
+```{=html}
+<script>
+// Quarto always injects its auto-generated #quarto-appendix (which contains
+// the footnotes list) right before </body>, regardless of where our own
+// closing </div> tags fall in the source - so it was rendering entirely
+// outside .content-pane, clipped by body's overflow:hidden (the "frozen at
+// the bottom, not actually reachable" symptom). This physically moves it
+// into .content-pane, right after .title-block, once the page has loaded,
+// so it becomes part of the normal scrollable content as intended.
+(function () {
+  function relocateFootnotes() {
+    var appendix = document.getElementById('quarto-appendix');
+    if (!appendix) return;
+    var anchor = document.querySelector('.content-pane .title-block');
+    if (anchor && anchor.parentNode) {
+      anchor.parentNode.insertBefore(appendix, anchor.nextSibling);
+    } else {
+      var pane = document.querySelector('.content-pane');
+      if (pane) pane.appendChild(appendix);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', relocateFootnotes);
+  } else {
+    relocateFootnotes();
+  }
+})();
+</script>
+```
+
+```{=html}
+</div>
+</div>
+```

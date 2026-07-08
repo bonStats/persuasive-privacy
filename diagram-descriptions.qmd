@@ -1,0 +1,128 @@
+::: {.tikz-desc data-node="sdata"}
+##### Private data 
+
+Sender's sensitive data, held privately and never shared.
+
+$$x \in \mathsf{X}$$
+:::
+
+::: {.tikz-desc data-node="mech"}
+##### Mechanism
+
+A (deterministic or randomised) mechanism.
+
+$$M: (\mathsf{X}, \mathcal{T}) \rightarrow [0,1]$$
+
+Markov kernel w.r.t. measurable space $(\mathsf{T}, \mathcal{T})$.
+
+:::
+
+::: {.tikz-desc data-node="sstat"}
+##### Statistic
+
+Generated from mechanism and shared with Receiver.
+
+$$T \sim M(x, \cdot)$$
+:::
+
+::: {.tikz-desc data-node="strans"}
+##### Privacy guarantee
+
+Shared with Receiver for transparency, so that the privacy of $M$ can be verified externally.
+
+<br>
+
+_[Assumption 1](#assumption-1) dictates that the privacy guarantee can not depend on $x$ directly. This prevents information leakage about the data through transparency. As such, communication of the guarantee to Receiver does not affect the data-posterior._
+
+:::
+
+::: {.tikz-desc data-node="spriv"}
+##### Privacy function
+
+The privacy function encodes how Receiver's decision affect the privacy of Sender.
+
+<br>
+
+_Under the data-posterior $Q_T$, with Receiver's optimal decision $d^{Q_T}$, the realised privacy for Sender is_
+
+$$
+\rho(d^{Q_T},x).
+$$
+
+:::
+
+
+::: {.tikz-desc data-node="adata"}
+##### Data-prior
+
+The receiver's assumed prior over the data is
+
+$$Q \in \mathcal{P}(\mathsf{X}).$$
+
+<br>
+
+_In [Assumption 5](#assumption-5) we have a class of prior distributions $\mathcal{Q}_x \subset \mathcal{P}(\mathsf{X})$ for which $Q \in \mathcal{Q}_x$ and Sender assesses the worst case._
+
+:::
+
+::: {.tikz-desc data-node="apost"}
+##### Data-posterior
+
+Receiver's posterior given the release of $T$ is 
+
+$$Q_T = Q(\,\cdot \mid T),$$
+which will depend on the chosen mechanism $M$.
+
+<br>
+
+_By [Assumption 1](#assumption-1), $Q_T$ does not depend on $\mathfrak{C}$._
+
+:::
+
+::: {.tikz-desc data-node="aact"}
+##### Receiver decision
+
+Receiver's decision is formed by posterior $Q_T$ and loss $\ell$.
+
+$$
+d^{Q_T} \in \arg\inf_{d \in \mathcal{D}} \mathbb{E}_{z \sim Q_T}[ \ell(d,z)]
+$$
+<br>
+
+_[Assumption 3](#assumption-3) dictates that $\ell = \rho$._
+
+:::
+
+::: {.tikz-desc data-node="aloss"}
+##### Receiver loss
+
+Receiver's loss function for decision making.
+
+<br>
+
+_[Assumption 3](#assumption-3) dictates that $\ell = \rho$. In other words, Receiver directly targets Sender's notion of privacy._
+
+:::
+
+::: {.tikz-desc data-node="statbox"}
+##### Sender
+
+Custodian of sensitive data $x$.  Chooses $M$ to persuade Receiver to make decisions with limited impact on privacy. 
+
+<br>
+
+_Sender conducts a robust assessment of privacy. These are formalised in [Assumption 4](#assumption-4) and [Assumption 5](#assumption-5)._
+
+:::
+
+::: {.tikz-desc data-node="advbox"}
+##### Receiver
+
+Receiver is a potential adversary who will make a decision after observing output $T \sim M(x,\cdot)$.
+
+<br>
+
+_Receiver is Bayes rational by [Assumption 2](#assumption-2). Therefore, they hold a prior $Q$ over (unknown) data $x$, and make decisions with respect to some loss function $\ell$._
+
+
+:::
